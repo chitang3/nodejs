@@ -1,7 +1,7 @@
 var fs = require('fs');
 var http = require('http');
 var express = require('express');
-
+var session = require('express-session');
 var app = express();
 
 app.use(express.cookieParser());
@@ -59,8 +59,10 @@ app.post('/login', function(request, response)
 
 	if(login == 'park' && password == '1234')
 	{
-		response.cookie('auth', true);
-		response.redirect('/');
+
+			request.session.user = 'park';
+			response.cookie('auth', true);
+			response.redirect('/');
 	}
 	else
 		response.redirect('/login');

@@ -1,12 +1,21 @@
 var fs = require('fs');
 var http = require('http');
 var express = require('express');
-
+var session = require('express-session');
 var app = express();
 
 app.use(express.cookieParser());
 app.use(express.bodyParser());
 app.use(app.router);
+app.use(express.session(
+{
+	secret: 'secret key',
+	key : 'login',
+	cookie :
+	{
+		maxAge: 60 * 1000
+	}
+}));
 
 app.get('/', function(request, response)
 {
@@ -50,8 +59,19 @@ app.post('/login', function(request, response)
 
 	if(login == 'park' && password == '1234')
 	{
-		response.cookie('auth', true);
-		response.redirect('/');
+		request.session.regenerate(function(err)
+		{
+			if(err)
+			{
+				console.log(err);
+			}
+			else
+			{
+				request.session.user = 'park';
+				response.cookie('auth', true);
+				response.redirect('/');
+			}
+		});
 	}
 	else
 		response.redirect('/login');
