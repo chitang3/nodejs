@@ -6,6 +6,11 @@
 </head>
 <body>
 	<h1>Login Success Page</h1>
-	<h1><a href = "login_upgrade_express_a"> Go to A</a></h1>
+	<h1><a href = "/a"> Go to A</a></h1>
+	
+	<form method="get">
+		<input type="submit" value="logout">
+	</form>
+
 </body>
 </html>

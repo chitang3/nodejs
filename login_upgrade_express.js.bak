@@ -2,43 +2,77 @@ var fs = require('fs');
 var http = require('http');
 var express = require('express');
 var session = require('express-session');
+var bodyParser = require('body-parser');
 var app = express();
 
-app.use(express.cookieParser());
-app.use(express.bodyParser());
-app.use(app.router);
-app.use(express.session(
+var error = function(error)
 {
-	secret: 'secret key',
-	key : 'login',
+	if(error.responseText == 'showAlert');
+	alert("Please enter correct user name and password.");
+};
+
+app.use(express.cookieParser());
+app.use(bodyParser.urlencoded({ extended: false}));
+//app.use(app.router);
+app.use(session(
+{
+	secret: 'keyboard cat',
 	cookie :
 	{
 		maxAge: 60 * 1000
 	}
 }));
 
+
 app.get('/', function(request, response)
 {
-	if(request.cookies.auth)
+	if(request.session.logic == "true")
 		response.redirect('/a');
 	else
+	{
 		response.redirect('/login');
+	}
 });
 
 app.get('/a', function(request, response)
 {
-	fs.readFile('login_upgrade_express_a.html',function(error,data)
+	if(request.session.logic == "true")
 	{
-		response.send(data.toString());
-	});
+		fs.readFile('login_upgrade_express_a.html',function(error,data)
+		{
+			response.send(data.toString());
+		});
+	}
+	else
+	{
+		response.send(500,'showAlert'); 
+		response.redirect('/');
+	}
 });
 
 app.get('/b', function(request, response)
 {
-	fs.readFile('login_upgrade_express_b.html',function(error,data)
+	if(request.session.logic == "true")
 	{
-		response.send(data.toString());
-	});
+		fs.readFile('login_upgrade_express_b.html',function(error,data)
+		{
+			response.send(data.toString());
+		});
+	}
+	else
+	{
+		response.send(500,'showAlert'); //alert("Please do login for your ID and Password.");
+		response.redirect('/');
+	}
+});
+
+app.post('/b', function(request, response)
+{
+	var logout = request.body.logout_button;
+
+	request.session.destroy();
+	console.log(request.session);
+	response.redirect('/');
 });
 
 app.get('/login', function(request, response)
@@ -47,31 +81,30 @@ app.get('/login', function(request, response)
 	{
 		response.send(data.toString());
 	});
+
+
 });
 
 app.post('/login', function(request, response)
 {
-	var login = request.param('login');
-	var password = request.param('password');
+	//var login = request.param('login');
+	//var password = request.param('password');
+	var login = request.body.login;
+	var password = request.body.password;
 
 	console.log(login, password);
 	console.log(request.body);
+	console.log(sess);
 
 	if(login == 'park' && password == '1234')
 	{
-		request.session.regenerate(function(err)
-		{
-			if(err)
-			{
-				console.log(err);
-			}
-			else
-			{
-				request.session.user = 'park';
-				response.cookie('auth', true);
-				response.redirect('/');
-			}
-		});
+		var sess = request.session;
+		sess.user = login;
+		sess.password = password;
+		sess.logic = "true";
+		//response.cookie('auth', true);
+		console.log(sess);
+		response.redirect('/');
 	}
 	else
 		response.redirect('/login');
