@@ -3,11 +3,38 @@ var http = require('http');
 var express = require('express');
 var session = require('express-session');
 var bodyParser = require('body-parser');
+var mysql = require('mysql');
+
+
 var app = express();
+//추가된 부분
+var connection = mysql.createConnection(
+{
+	host		: 'localhost',
+	port		: 3306,
+	user		: 'root', 
+	password	: 'MYdb#549',
+	database	: 'test'
+});
 
 app.use(express.cookieParser());
 app.use(bodyParser.urlencoded({ extended: false}));
 //app.use(app.router);
+app.use(express.json());
+
+//추가된 부분
+connection.connect(function(err)
+{
+	if(err)
+	{
+		console.error('mysql connection error');
+		console.error(err);
+		throw err;
+	}
+	else
+		console.log("connection success!");
+});
+
 app.use(session(
 {
 	secret: 'keyboard cat',
@@ -16,7 +43,6 @@ app.use(session(
 		maxAge: 60 * 1000
 	}
 }));
-
 
 app.get('/', function(request, response)
 {
@@ -79,27 +105,55 @@ app.get('/login', function(request, response)
 
 app.post('/login', function(request, response)
 {
-	//var login = request.param('login');
-	//var password = request.param('password');
 	var login = request.body.login;
 	var password = request.body.password;
 
 	console.log(login, password);
 	console.log(request.body);
-	console.log(sess);
 
-	if(login == 'park' && password == '1234')
+	var query = connection.query('select * from test_node', function(err, rows)
 	{
-		var sess = request.session;
-		sess.user = login;
-		sess.password = password;
-		sess.logic = "true";
-		//response.cookie('auth', true);
-		console.log(sess);
-		response.redirect('/');
-	}
-	else
-		response.redirect('/login');
+
+		if(err)
+		{
+			console.log('err');
+			console.log('err');
+		} 
+		else
+		{
+			console.log(rows);
+
+
+			for(var i = 0; i < rows.length; i++)
+			{
+				console.log(rows[i].id);
+				console.log(rows[i].pass);
+
+				if(login == rows[i].id && password == rows[i].pass)
+				{
+					console.log('DB인증 성공');
+
+					var sess = request.session;
+					sess.user = login;
+					sess.password = password;
+					sess.logic = "true";
+
+					//response.cookie('auth', true);
+
+					console.log(sess);
+					break;
+				}
+				else
+				{
+					login_sucess = 0;
+					console.log('DB인증 실패');
+				}
+
+			}
+			response.redirect('/');
+			console.log(sess);
+		}
+	});
 });
 
 http.createServer(app).listen(52273, function()
