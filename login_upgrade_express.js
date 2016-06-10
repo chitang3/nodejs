@@ -4,10 +4,11 @@ var express = require('express');
 var session = require('express-session');
 var bodyParser = require('body-parser');
 var mysql = require('mysql');
-
+var mongoose = require('mongoose');
+var MongoStore = require('connect-mongo')(session);
 
 var app = express();
-//추가된 부분
+
 var connection = mysql.createConnection(
 {
 	host		: 'localhost',
@@ -17,13 +18,15 @@ var connection = mysql.createConnection(
 	database	: 'test'
 });
 
-app.use(express.cookieParser());
-app.use(bodyParser.urlencoded({ extended: false}));
-//app.use(app.router);
+
+mongoose.connect('mongodb://localhost:27017/nodejs'); //mongodb connection
+app.use(express.cookieParser());//cookie 이용하기 위해
+app.use(bodyParser.urlencoded({extended: false}));//session 이용하기 위해
+//app.use(app.router); 오류생김
 app.use(express.json());
 
 //추가된 부분
-connection.connect(function(err)
+connection.connect(function(err)	//mysql 연동
 {
 	if(err)
 	{
@@ -35,16 +38,21 @@ connection.connect(function(err)
 		console.log("connection success!");
 });
 
-app.use(session(
+app.use(session(		//session 설정과 mongodb 연동
 {
-	secret: 'keyboard cat',
+	secret: "test node key",
 	cookie :
 	{
 		maxAge: 60 * 1000
-	}
+	},
+	
+	store : new MongoStore(
+	{
+		mongooseConnection: mongoose.connection
+	})
 }));
 
-app.get('/', function(request, response)
+app.get('/', function(request, response)		//메인페이지
 {
 	if(request.session.logic == "true")
 		response.redirect('/a');
@@ -54,7 +62,7 @@ app.get('/', function(request, response)
 	}
 });
 
-app.get('/a', function(request, response)
+app.get('/a', function(request, response)		//After Success login page
 {
 	if(request.session.logic == "true")
 	{
@@ -69,7 +77,7 @@ app.get('/a', function(request, response)
 	}
 });
 
-app.get('/b', function(request, response)
+app.get('/b', function(request, response)		//After Success login page
 {
 	if(request.session.logic == "true")
 	{
@@ -84,7 +92,7 @@ app.get('/b', function(request, response)
 	}
 });
 
-app.post('/b', function(request, response)
+app.post('/b', function(request, response)		//logout
 {
 	var logout = request.body.logout_button;
 
@@ -93,7 +101,7 @@ app.post('/b', function(request, response)
 	response.redirect('/');
 });
 
-app.get('/login', function(request, response)
+app.get('/login', function(request, response)	//login page
 {
 	fs.readFile('login.html', function(error, data)
 	{
@@ -103,7 +111,7 @@ app.get('/login', function(request, response)
 
 });
 
-app.post('/login', function(request, response)
+app.post('/login', function(request, response)		//process login
 {
 	var login = request.body.login;
 	var password = request.body.password;
@@ -111,7 +119,7 @@ app.post('/login', function(request, response)
 	console.log(login, password);
 	console.log(request.body);
 
-	var query = connection.query('select * from test_node', function(err, rows)
+	var query = connection.query('select * from test_node where id = \'' + login +'\'', function(err, rows)
 	{
 
 		if(err)
@@ -122,12 +130,13 @@ app.post('/login', function(request, response)
 		else
 		{
 			console.log(rows);
-
-
-			for(var i = 0; i < rows.length; i++)
+			/*
+			*	rows라는 json 인자는 배열 형태로 들어오기 때문에
+			*	항상 rows[i] 형태로 사용해야한다.
+			*/
+			for(var i=0; i<rows.length;i++)
 			{
-				console.log(rows[i].id);
-				console.log(rows[i].pass);
+				console.log(rows[i].id, rows[i].pass);
 
 				if(login == rows[i].id && password == rows[i].pass)
 				{
@@ -141,18 +150,18 @@ app.post('/login', function(request, response)
 					//response.cookie('auth', true);
 
 					console.log(sess);
+
 					break;
-				}
+				}	
 				else
 				{
 					login_sucess = 0;
 					console.log('DB인증 실패');
 				}
-
 			}
-			response.redirect('/');
-			console.log(sess);
 		}
+		response.redirect('/');
+		console.log(sess);
 	});
 });
 
