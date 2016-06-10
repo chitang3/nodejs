@@ -18,7 +18,7 @@ var connection = mysql.createConnection(
 	database	: 'test'
 });
 
-
+    	
 mongoose.connect('mongodb://localhost:27017/nodejs'); //mongodb connection
 app.use(express.cookieParser());//cookie 이용하기 위해
 app.use(bodyParser.urlencoded({extended: false}));//session 이용하기 위해
@@ -151,7 +151,7 @@ app.post('/login', function(request, response)		//process login
 
 					console.log(sess);
 
-					break;
+					break;   
 				}	
 				else
 				{
